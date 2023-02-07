@@ -33,7 +33,7 @@ class LoginUser {
 @RestController
 @RequestMapping("/user-management")
 class UserController {
-    @PostMapping("/signin")
+    @PostMapping("/login")
     public String signin(@RequestBody LoginUser loginUser) {
         if (loginUser.username.equals("omri.ratson") && loginUser.password.equals("1234")) {
             return UUID.randomUUID().toString();

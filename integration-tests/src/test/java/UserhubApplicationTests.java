@@ -2,74 +2,66 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.omriratson.userhub.UserhubApplication;
+import io.restassured.RestAssured;
 import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-
-import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 
 @SpringBootTest(
-		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-		classes = UserhubApplication.class)
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        classes = UserhubApplication.class)
 class UserhubApplicationTests {
+    @LocalServerPort
+    private int port;
 
-	@BeforeAll
-	static void datesHandler() {
-		objectMapper = setupObjectMapper();
-	}
+    @BeforeEach
+    void datesHandler() {
+        objectMapper = setupObjectMapper();
+        RestAssured.port = port;
+    }
 
 
-	protected static ObjectMapper objectMapper;
+    protected static ObjectMapper objectMapper;
 
 
-	@Test
-	void contextLoads() {
-		final var body = Map.of(
-				"email", "omri.ratson2@nice.com",
-				"password", "#Eab2qzzFrzW@Ey$t#G^",
-				"getUserDetails", true
-		);
+    @Test
+    void contextLoads() {
+        final var body = """
+                {
+                	"username": "omri.ratson",
+                	"password": "1234"
+                }
+                """;
 
-		var response = given()
-				.contentType(JSON)
-				.body(body)
-				.post("https://na1.dev.nice-incontact.com/public/authentication/v1/login")
-				.then()
-				.contentType(JSON)
-				.log()
-				.all(true)
-				.statusCode(HttpStatus.SC_OK)
-				.extract()
-				.response();
+        given()
+                .contentType(JSON)
+                .body(body)
+                .post("/user-management/login")
+                .then()
+                .log()
+                .all(true)
+                .statusCode(HttpStatus.SC_OK)
+                .extract()
+                .response();
 
-		System.out.println(response.getBody().prettyPrint());
-	}
+    }
 
-	public static ObjectMapper setupObjectMapper() {
-		JavaTimeModule module = new JavaTimeModule();
-//        LocalDateTimeDeserializer localDateTimeDeserializer = new
-//                LocalDateTimeDeserializer(DATE_TIME_PATTERNS);
-//        module.addDeserializer(LocalDateTime.class, localDateTimeDeserializer);
-		return Jackson2ObjectMapperBuilder
-				.json()
-				.serializationInclusion(JsonInclude.Include.NON_EMPTY)
-				.featuresToDisable(
-						SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
-						DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
-				)
-				.build();
-	}
+    public static ObjectMapper setupObjectMapper() {
+        return Jackson2ObjectMapperBuilder
+                .json()
+                .serializationInclusion(JsonInclude.Include.NON_EMPTY)
+                .featuresToDisable(
+                        SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+                        DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
+                )
+                .build();
+    }
 
 }
